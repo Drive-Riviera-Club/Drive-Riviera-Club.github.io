@@ -1,0 +1,8 @@
+Estado de validación
+
+npm install: correcto
+npm run dev: inicia correctamente en http://localhost:5173
+npm run lint: sin errores (solo 2 warnings informativos de React Hook Form)
+npm run test -- --run: 10 pruebas aprobadas
+npm run build: compila y genera dist
+npm run preview: inicia correctamente en http://localhost:4173
