@@ -2,7 +2,8 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
@@ -29,6 +30,7 @@ jobs:
           cache: npm
 
       - name: Configure GitHub Pages
+        id: pages
         uses: actions/configure-pages@v5
 
       - name: Install dependencies
@@ -41,16 +43,15 @@ jobs:
         run: npm run test -- --run
 
       - name: Build
-        run: npm run build
+        run: npm run build -- --base "${{ steps.pages.outputs.base_path }}"
         env:
-          VITE_REPOSITORY_NAME: ${{ github.event.repository.name }}
           VITE_WHATSAPP_NUMBER: ${{ vars.VITE_WHATSAPP_NUMBER }}
           VITE_GEOAPIFY_API_KEY: ${{ vars.VITE_GEOAPIFY_API_KEY }}
 
-      - name: Upload artifact
+      - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          path: dist
+          path: ./dist
 
   deploy:
     needs: build
