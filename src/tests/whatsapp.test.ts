@@ -26,14 +26,14 @@ describe('whatsapp helpers', () => {
       date: '2026-07-22',
       time: '13:00',
       passengers: 4,
-      luggage: 3,
-      vehicle: 'Sedan',
-      infantSeat: false,
       customerName: 'Luis Soto',
+      comments: 'Llevamos equipaje y requerimos ayuda al abordar.',
       folio: 'DRC-TRF-20260720-5678',
     });
     expect(message).toContain('Folio: DRC-TRF-20260720-5678');
     expect(message).toContain('Origen: Cancun');
+    expect(message).toContain('Pasajeros: 4');
+    expect(message).toContain('Comentarios: Llevamos equipaje y requerimos ayuda al abordar.');
   });
 
   it('codifica correctamente URL de WhatsApp', () => {

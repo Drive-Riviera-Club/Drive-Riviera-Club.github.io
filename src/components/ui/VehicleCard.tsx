@@ -1,4 +1,4 @@
-import { Car, Luggage, Users } from 'lucide-react';
+import { Car, Eye, Luggage, Users } from 'lucide-react';
 import type { Vehicle } from '../../types';
 import { formatCurrencyMXN } from '../../lib/pricing';
 
@@ -7,9 +7,10 @@ interface VehicleCardProps {
   selected: boolean;
   mode: 'rental' | 'transfer';
   onSelect: (id: string) => void;
+  onViewDetails?: () => void;
 }
 
-export function VehicleCard({ vehicle, selected, onSelect, mode }: VehicleCardProps) {
+export function VehicleCard({ vehicle, selected, onSelect, onViewDetails, mode }: VehicleCardProps) {
   const available = mode === 'rental' ? vehicle.availableForRental : vehicle.availableForTransfer;
 
   return (
@@ -40,6 +41,16 @@ export function VehicleCard({ vehicle, selected, onSelect, mode }: VehicleCardPr
           <li key={feature}>{feature}</li>
         ))}
       </ul>
+      {onViewDetails ? (
+        <button
+          type="button"
+          onClick={onViewDetails}
+          className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-sand bg-white px-3 py-2 text-sm font-semibold text-navy transition hover:bg-cream"
+          aria-haspopup="dialog"
+        >
+          <Eye size={16} /> Ver detalles
+        </button>
+      ) : null}
       <button
         type="button"
         disabled={!available}

@@ -18,6 +18,7 @@ export interface Vehicle {
   featured: boolean;
   description: string;
   features: string[];
+  idealFor: string;
 }
 
 export interface PickupLocation {

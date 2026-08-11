@@ -4,8 +4,6 @@ import { useMemo, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { bookingConfig } from '../../config/booking';
 import { businessConfig } from '../../config/business';
-import { vehicles } from '../../data/vehicles';
-import { filterTransferVehicles } from '../../lib/booking';
 import { generateReferenceFolio } from '../../lib/folios';
 import { hasGeoapifyKey } from '../../lib/maps';
 import { buildTransferWhatsAppMessage, createWhatsAppUrl } from '../../lib/whatsapp';
@@ -16,20 +14,16 @@ import { BookingSummary } from '../ui/BookingSummary';
 import { DateSelector } from '../ui/DateSelector';
 import { PassengerSelector } from '../ui/PassengerSelector';
 import { TimeSelector } from '../ui/TimeSelector';
-import { VehicleGrid } from '../ui/VehicleGrid';
 import { WhatsAppButton } from '../ui/WhatsAppButton';
 
-const steps = ['Ruta', 'Fecha', 'Pasajeros', 'Vehiculo', 'Cliente', 'Resumen', 'WhatsApp'];
+const steps = ['Ruta', 'Fecha', 'Cliente', 'Resumen'];
 const today = format(new Date(), 'yyyy-MM-dd');
 
 const stepFields: Record<number, (keyof TransferFormValues)[]> = {
   0: ['origin', 'destination'],
   1: ['pickupDate', 'pickupTime'],
-  2: ['adults', 'children', 'babies', 'luggage'],
-  3: ['vehicleId'],
-  4: ['firstName', 'lastName'],
-  5: [],
-  6: [],
+  2: ['passengers', 'firstName', 'lastName', 'email', 'phone', 'comments'],
+  3: [],
 };
 
 export function TransferBookingWizard() {
@@ -38,21 +32,15 @@ export function TransferBookingWizard() {
   const geoapifyEnabled = useMemo(() => hasGeoapifyKey(), []);
 
   const form = useForm<TransferFormValues>({
-    resolver: zodResolver(transferSchema),
+    resolver: zodResolver(transferSchema) as never,
     mode: 'onChange',
     defaultValues: {
       origin: null,
       destination: null,
       pickupDate: format(addDays(new Date(), 1), 'yyyy-MM-dd'),
       pickupTime: '',
-      adults: 1,
-      children: 0,
-      babies: 0,
-      luggage: 1,
-      infantSeat: false,
-      flightNumber: '',
       comments: '',
-      vehicleId: '',
+      passengers: 1,
       firstName: '',
       lastName: '',
       email: '',
@@ -60,19 +48,9 @@ export function TransferBookingWizard() {
     },
   });
 
-  const [origin, destination, pickupDate, pickupTime, adults, children, babies, luggage, infantSeat, flightNumber, comments, vehicleId, firstName, lastName] = useWatch({
-    control: form.control,
-    name: ['origin', 'destination', 'pickupDate', 'pickupTime', 'adults', 'children', 'babies', 'luggage', 'infantSeat', 'flightNumber', 'comments', 'vehicleId', 'firstName', 'lastName'],
-  });
-
-  const totalPassengers = (adults || 0) + (children || 0) + (babies || 0);
-
-  const compatibleVehicles = useMemo(
-    () => filterTransferVehicles({ vehicles, passengers: totalPassengers, luggage: luggage || 0 }),
-    [luggage, totalPassengers]
-  );
-
-  const selectedVehicle = useMemo(() => vehicles.find((vehicle) => vehicle.id === vehicleId), [vehicleId]);
+  const values = useWatch({ control: form.control, defaultValue: form.getValues() }) as TransferFormValues;
+  const { origin, destination, pickupDate, pickupTime, comments, passengers, firstName, lastName, email, phone } = values;
+  const passengerCount = passengers || 0;
 
   const validateLocationsForMode = () => {
     const currentOrigin = origin?.formattedAddress?.trim();
@@ -122,19 +100,16 @@ export function TransferBookingWizard() {
 
   const sendWhatsApp = async () => {
     const valid = await form.trigger();
-    if (!valid || !origin || !destination || !selectedVehicle) return;
+    if (!valid || !origin || !destination) return;
 
     const message = buildTransferWhatsAppMessage({
       origin: origin.formattedAddress,
       destination: destination.formattedAddress,
       date: pickupDate,
       time: pickupTime,
-      passengers: totalPassengers,
-      luggage: luggage || 0,
-      vehicle: selectedVehicle.name,
-      flightNumber,
-      infantSeat: Boolean(infantSeat),
+      passengers: passengerCount,
       customerName: `${firstName || ''} ${lastName || ''}`.trim(),
+      comments,
       folio,
     });
 
@@ -175,57 +150,36 @@ export function TransferBookingWizard() {
         ) : null}
 
         {step === 1 ? (
-          <div className="grid gap-3 sm:grid-cols-2">
-            <DateSelector
-              label="Fecha de recogida"
-              value={pickupDate}
-              onChange={(value) => form.setValue('pickupDate', value, { shouldValidate: true })}
-              min={today}
-              error={form.formState.errors.pickupDate?.message}
-            />
-            <TimeSelector
-              label="Hora de recogida"
-              value={pickupTime}
-              onChange={(value) => form.setValue('pickupTime', value, { shouldValidate: true })}
-              times={bookingConfig.availablePickupTimes}
-              error={form.formState.errors.pickupTime?.message}
-            />
+          <div className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <DateSelector
+                label="Fecha de traslado"
+                value={pickupDate}
+                onChange={(value) => form.setValue('pickupDate', value, { shouldValidate: true })}
+                min={today}
+                error={form.formState.errors.pickupDate?.message}
+              />
+              <TimeSelector
+                label="Hora de traslado"
+                value={pickupTime}
+                onChange={(value) => form.setValue('pickupTime', value, { shouldValidate: true })}
+                times={bookingConfig.availablePickupTimes}
+                error={form.formState.errors.pickupTime?.message}
+              />
+            </div>
+            <p className="text-xs text-slate-600">Los datos del traslado se confirmarán por WhatsApp.</p>
           </div>
         ) : null}
 
         {step === 2 ? (
           <div className="grid gap-3 sm:grid-cols-2">
-            <PassengerSelector label="Adultos" value={adults || 0} min={1} onChange={(value) => form.setValue('adults', value, { shouldValidate: true })} />
-            <PassengerSelector label="Niños" value={children || 0} onChange={(value) => form.setValue('children', value, { shouldValidate: true })} />
-            <PassengerSelector label="Bebés" value={babies || 0} onChange={(value) => form.setValue('babies', value, { shouldValidate: true })} />
-            <PassengerSelector label="Equipaje aproximado" value={luggage || 0} onChange={(value) => form.setValue('luggage', value, { shouldValidate: true })} />
-            <label className="flex items-center gap-2 rounded-xl border border-sand bg-white px-3 py-3 text-sm sm:col-span-2">
-              <input type="checkbox" checked={Boolean(infantSeat)} onChange={(event) => form.setValue('infantSeat', event.target.checked)} />
-              Requiero silla infantil
-            </label>
-            <label className="block sm:col-span-2">
-              <span className="mb-1 block text-sm">Número de vuelo (opcional)</span>
-              <input className="w-full rounded-xl border border-sand bg-white px-3 py-3 text-sm" {...form.register('flightNumber')} />
-            </label>
-            <label className="block sm:col-span-2">
-              <span className="mb-1 block text-sm">Comentarios (opcional)</span>
-              <textarea className="w-full rounded-xl border border-sand bg-white px-3 py-3 text-sm" rows={3} {...form.register('comments')} />
-            </label>
-            <p className="text-xs text-slate-600 sm:col-span-2">Pasajeros totales: <strong>{totalPassengers}</strong></p>
-          </div>
-        ) : null}
-
-        {step === 3 ? (
-          <VehicleGrid
-            vehicles={compatibleVehicles}
-            selectedVehicleId={vehicleId}
-            onSelect={(id) => form.setValue('vehicleId', id, { shouldValidate: true })}
-            mode="transfer"
-          />
-        ) : null}
-
-        {step === 4 ? (
-          <div className="grid gap-3 sm:grid-cols-2">
+            <PassengerSelector
+              label="No. de pasajeros"
+              value={passengerCount}
+              min={1}
+              onChange={(value) => form.setValue('passengers', value, { shouldValidate: true })}
+              error={form.formState.errors.passengers?.message}
+            />
             <label className="block">
               <span className="mb-1 block text-sm">Nombre</span>
               <input className="w-full rounded-xl border border-sand bg-white px-3 py-3 text-sm" {...form.register('firstName')} />
@@ -244,25 +198,31 @@ export function TransferBookingWizard() {
               <span className="mb-1 block text-sm">Teléfono (opcional)</span>
               <input className="w-full rounded-xl border border-sand bg-white px-3 py-3 text-sm" {...form.register('phone')} />
             </label>
+            <label className="block sm:col-span-2">
+              <span className="mb-1 block text-sm">Comentarios (opcional)</span>
+              <textarea
+                className="w-full rounded-xl border border-sand bg-white px-3 py-3 text-sm"
+                rows={4}
+                placeholder="Ej. cantidad o tamaño de equipaje, silla infantil, número de vuelo, necesidades especiales u otra información relevante."
+                {...form.register('comments')}
+              />
+              <p className="mt-1 text-xs text-slate-500">Puedes incluir cualquier detalle adicional que quieras comunicar al confirmar el traslado.</p>
+            </label>
           </div>
         ) : null}
 
-        {step === 5 ? (
-          <BookingSummary title="Resumen de traslado privado">
-            <p>Origen: {origin?.formattedAddress}</p>
-            <p>Destino: {destination?.formattedAddress}</p>
-            <p>Fecha y hora: {pickupDate} {pickupTime}</p>
-            <p>Pasajeros: {totalPassengers}</p>
-            <p>Equipaje: {luggage}</p>
-            <p>Vehículo: {selectedVehicle?.name}</p>
-            <p>Silla infantil: {infantSeat ? 'Sí' : 'No'}</p>
-            <p>Vuelo: {flightNumber || 'No aplica'}</p>
-            <p>Observaciones: {comments || 'Sin observaciones'}</p>
-          </BookingSummary>
-        ) : null}
-
-        {step === 6 ? (
-          <div className="space-y-4 rounded-2xl border border-sand bg-white p-5">
+        {step === 3 ? (
+          <div className="space-y-4">
+            <BookingSummary title="Resumen de traslado privado">
+              <p>Origen: {origin?.formattedAddress}</p>
+              <p>Destino: {destination?.formattedAddress}</p>
+              <p>Fecha y hora: {pickupDate} {pickupTime}</p>
+              <p>No. de pasajeros: {passengerCount}</p>
+              <p>Cliente: {firstName} {lastName}</p>
+              <p>Correo: {email || 'No aplica'}</p>
+              <p>Teléfono: {phone || 'No aplica'}</p>
+              {comments?.trim() ? <p>Comentarios: {comments}</p> : null}
+            </BookingSummary>
             <p className="text-sm text-slate-700">Folio de solicitud: <strong>{folio}</strong></p>
             <WhatsAppButton onClick={sendWhatsApp} />
             <p className="text-xs text-slate-500">Se abrirá WhatsApp con el mensaje estructurado para confirmación.</p>

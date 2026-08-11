@@ -5,7 +5,7 @@ interface BookingStepperProps {
 
 export function BookingStepper({ steps, currentStep }: BookingStepperProps) {
   return (
-    <ol className="grid gap-2 sm:grid-cols-7" aria-label="Progreso del formulario">
+    <ol className="grid gap-2" style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }} aria-label="Progreso del formulario">
       {steps.map((step, index) => {
         const state = index <= currentStep ? 'active' : 'pending';
         return (

@@ -21,10 +21,7 @@ export const buildTransferWhatsAppMessage = (input: {
   date: string;
   time: string;
   passengers: number;
-  luggage: number;
-  vehicle: string;
-  flightNumber?: string;
-  infantSeat: boolean;
   customerName: string;
+  comments?: string;
   folio: string;
-}) => `Hola, Drive Riviera Club.\n\nMe gustaria solicitar un traslado privado.\n\n━━━━━━━━━━━━━━━━━━\n📍 Origen: ${input.origin}\n📍 Destino: ${input.destination}\n\n📅 Fecha: ${formatDateSpanish(input.date)}\n🕒 Hora: ${input.time}\n\n👥 Pasajeros: ${input.passengers}\n🧳 Equipaje: ${input.luggage}\n🚙 Vehiculo solicitado: ${input.vehicle}\n✈️ Vuelo: ${input.flightNumber?.trim() ? input.flightNumber : 'No aplica'}\n👶 Silla infantil: ${input.infantSeat ? 'Si' : 'No'}\n👤 Cliente: ${input.customerName}\n━━━━━━━━━━━━━━━━━━\n\nEntiendo que el servicio esta sujeto a disponibilidad y confirmacion.\n\nFolio: ${input.folio}`;
+}) => `Hola, Drive Riviera Club.\n\nMe gustaria solicitar un traslado privado.\n\n━━━━━━━━━━━━━━━━━━\n📍 Origen: ${input.origin}\n📍 Destino: ${input.destination}\n\n📅 Fecha: ${formatDateSpanish(input.date)}\n🕒 Hora: ${input.time}\n\n👥 Pasajeros: ${input.passengers}\n👤 Cliente: ${input.customerName}${input.comments?.trim() ? `\n📝 Comentarios: ${input.comments.trim()}` : ''}\n━━━━━━━━━━━━━━━━━━\n\nEntiendo que el servicio esta sujeto a disponibilidad y confirmacion.\n\nFolio: ${input.folio}`;
