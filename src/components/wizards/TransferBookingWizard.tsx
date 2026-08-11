@@ -29,6 +29,8 @@ const stepFields: Record<number, (keyof TransferFormValues)[]> = {
 export function TransferBookingWizard() {
   const [step, setStep] = useState(0);
   const [folio] = useState(() => generateReferenceFolio('TRF'));
+  const [originKey, setOriginKey] = useState(0);
+  const [destinationKey, setDestinationKey] = useState(0);
   const geoapifyEnabled = useMemo(() => hasGeoapifyKey(), []);
 
   const form = useForm<TransferFormValues>({
@@ -95,6 +97,8 @@ export function TransferBookingWizard() {
 
   const clearDraft = () => {
     form.reset();
+    setOriginKey((current) => current + 1);
+    setDestinationKey((current) => current + 1);
     sessionStorage.removeItem('drc-transfer-draft');
   };
 
@@ -128,6 +132,7 @@ export function TransferBookingWizard() {
         {step === 0 ? (
           <div className="space-y-3">
             <PlaceAutocomplete
+              key={originKey}
               label="¿Dónde te recogemos?"
               placeholder="Hotel, aeropuerto, calle o punto de referencia"
               value={origin || null}
@@ -137,6 +142,7 @@ export function TransferBookingWizard() {
               locationBias={{ latitude: 21.1619, longitude: -86.8515, radius: 100000 }}
             />
             <PlaceAutocomplete
+              key={destinationKey}
               label="¿A dónde deseas ir?"
               placeholder="Hotel, aeropuerto, calle o punto de referencia"
               value={destination || null}

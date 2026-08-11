@@ -35,7 +35,7 @@ export function PlaceAutocomplete({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const hasApiKey = useMemo(() => hasGeoapifyKey(), []);
-  const inputValue = value?.formattedAddress || '';
+  const [inputText, setInputText] = useState(value?.formattedAddress ?? '');
   const [suggestions, setSuggestions] = useState<SelectedPlace[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -71,7 +71,7 @@ export function PlaceAutocomplete({
       return;
     }
 
-    const trimmed = inputValue.trim();
+    const trimmed = inputText.trim();
     if (trimmed.length < 3) {
       return;
     }
@@ -98,7 +98,7 @@ export function PlaceAutocomplete({
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [hasApiKey, inputValue, locationBias, onPlaceSelect]);
+  }, [hasApiKey, inputText, locationBias, onPlaceSelect]);
 
   const selectSuggestion = (place: SelectedPlace) => {
     const selectedPlace = createSelectedTransferPlace(place);
@@ -106,11 +106,14 @@ export function PlaceAutocomplete({
     setSuggestions([]);
     setActiveIndex(-1);
     setStatusMessage('');
+    setInputText(selectedPlace.formattedAddress);
     onPlaceSelect(selectedPlace);
     inputRef.current?.focus();
   };
 
   const handleInputChange = (nextValue: string) => {
+    setInputText(nextValue);
+
     if (!nextValue.trim()) {
       setSuggestions([]);
       setLoading(false);
@@ -125,7 +128,10 @@ export function PlaceAutocomplete({
       return;
     }
 
-    onPlaceSelect(createFreeTextPlace(nextValue));
+    if (value?.selectedFromSuggestions) {
+      onPlaceSelect(null);
+    }
+
     if (nextValue.trim().length < 3) {
       setSuggestions([]);
       setLoading(false);
@@ -139,6 +145,12 @@ export function PlaceAutocomplete({
   };
 
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
+    if (hasApiKey && open && suggestions.length && event.key === 'Tab' && activeIndex >= 0) {
+      event.preventDefault();
+      selectSuggestion(suggestions[activeIndex]);
+      return;
+    }
+
     if (!hasApiKey || !open || !suggestions.length) {
       if (event.key === 'Escape') {
         setOpen(false);
@@ -173,10 +185,10 @@ export function PlaceAutocomplete({
           ref={inputRef}
           id={id}
           disabled={disabled}
-          value={inputValue}
+          value={inputText}
           onChange={(event) => handleInputChange(event.target.value)}
           onFocus={() => {
-            if (hasApiKey && suggestions.length && inputValue.trim().length >= 3) {
+            if (hasApiKey && suggestions.length && inputText.trim().length >= 3) {
               setOpen(true);
             }
           }}
@@ -191,7 +203,7 @@ export function PlaceAutocomplete({
           aria-controls={`${id}-listbox`}
           aria-invalid={Boolean(error)}
         />
-        {inputValue ? (
+        {inputText ? (
           <button
             type="button"
             onClick={() => {
@@ -199,6 +211,7 @@ export function PlaceAutocomplete({
               setOpen(false);
               setActiveIndex(-1);
               setStatusMessage('');
+              setInputText('');
               onPlaceSelect(null);
               inputRef.current?.focus();
             }}
@@ -216,12 +229,12 @@ export function PlaceAutocomplete({
         <p className="mt-1 text-[11px] text-slate-500">{geoapifyAttribution}</p>
       ) : null}
 
-      {loading && inputValue.trim().length >= 3 ? <p className="mt-2 text-xs text-slate-500">Buscando ubicaciones...</p> : null}
-      {statusMessage && inputValue.trim().length >= 3 ? <p className="mt-2 text-xs text-slate-500">{statusMessage}</p> : null}
+      {loading && inputText.trim().length >= 3 ? <p className="mt-2 text-xs text-slate-500">Buscando ubicaciones...</p> : null}
+      {statusMessage && inputText.trim().length >= 3 ? <p className="mt-2 text-xs text-slate-500">{statusMessage}</p> : null}
       {error ? <p className="mt-2 text-xs text-rose-600">{error}</p> : null}
       {!hasApiKey ? <p className="mt-2 text-xs text-slate-500">La ubicación será validada y confirmada por WhatsApp.</p> : null}
 
-      {hasApiKey && open && inputValue.trim().length >= 3 && suggestions.length > 0 ? (
+      {hasApiKey && open && inputText.trim().length >= 3 && suggestions.length > 0 ? (
         <div className="absolute z-50 mt-2 max-h-72 w-full overflow-auto rounded-2xl border border-sand bg-white shadow-card">
           <ul id={`${id}-listbox`} role="listbox" className="py-2">
             {suggestions.map((suggestion, index) => {
