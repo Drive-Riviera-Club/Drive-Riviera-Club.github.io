@@ -1,9 +1,4 @@
-interface HeroProps {
-  onSelectRental: () => void;
-  onSelectTransfer: () => void;
-}
-
-export function Hero({ onSelectRental, onSelectTransfer }: HeroProps) {
+export function Hero() {
   return (
     <section id="inicio" className="mx-auto mt-8 grid max-w-6xl gap-8 px-4 sm:px-6 lg:grid-cols-[1.1fr_1fr]">
       <div className="animate-rise">
@@ -16,14 +11,6 @@ export function Hero({ onSelectRental, onSelectTransfer }: HeroProps) {
         <p className="mt-5 max-w-xl text-base text-slate-700 sm:text-lg">
           Explora la Riviera Maya a tu ritmo. Elige como comienza tu experiencia.
         </p>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <button onClick={onSelectRental} className="rounded-full bg-forest px-5 py-3 text-sm font-semibold text-white hover:bg-turquoise">
-            Rentar un auto
-          </button>
-          <button onClick={onSelectTransfer} className="rounded-full border border-forest px-5 py-3 text-sm font-semibold text-forest hover:bg-forest hover:text-white">
-            Solicitar traslado
-          </button>
-        </div>
       </div>
       <div className="relative min-h-[330px] overflow-hidden rounded-3xl border border-sand bg-gradient-to-br from-turquoise via-forest to-navy shadow-card">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(233,185,73,.5),transparent_40%)]" />
